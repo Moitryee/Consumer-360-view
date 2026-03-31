@@ -1,0 +1,91 @@
+use consumer;
+-- Question 1 . who are the customers? ( total numbers of customers) 
+select distinct count(customer_id) as total_customers from olist_orders_dataset;
+-- Question 2. who are the high value customers?
+with cte as
+(select lio.customer_id as cus, (plp.payment_installments*plp.payment_value) as total_amount
+from olist_order_payments_dataset  plp
+join olist_orders_dataset lio 
+on plp.order_id =lio.order_id
+group by lio.customer_id
+having count(plp.order_id)>5)
+select cus
+from cte
+order by total_amount desc limit 10 ;
+-- question total orders per customers
+select distinct customer_id, count(order_id) as orders
+from olist_orders_dataset
+group by customer_id;
+-- all hade given orders only one time.
+-- avarage order value 
+with cte as (select lio.customer_id as cus, 
+(plp.payment_installments*plp.payment_value) as total_amount
+from olist_order_payments_dataset  plp
+join olist_orders_dataset lio 
+on plp.order_id =lio.order_id)
+select round(avg(total_amount),2) as average_order_value from cte;
+-- total money spend by each customer 
+
+with cte as (select lio.customer_id as cus, 
+(plp.payment_installments*plp.payment_value) as total_amount
+from olist_order_payments_dataset  plp
+join olist_orders_dataset lio 
+on plp.order_id =lio.order_id)
+select cus,round(sum(total_amount),2) as total_order_value from cte
+group by cus
+having total_order_value>0
+order by total_order_value desc limit 10;
+
+
+-- % growth per month by new customers 
+
+
+WITH first_purchase AS (
+    SELECT 
+        customer_id,
+        MIN(order_purchase_timestamp) AS first_order_date
+    FROM olist_orders_dataset
+    GROUP BY customer_id
+),
+
+cte2 AS (
+    SELECT 
+        YEAR(first_order_date) AS year,
+        MONTH(first_order_date) AS month_num,  
+        MONTHNAME(first_order_date) AS month,
+        COUNT(customer_id) AS new_customers
+    FROM first_purchase
+    GROUP BY 
+        YEAR(first_order_date),
+        MONTH(first_order_date),
+        MONTHNAME(first_order_date)
+)
+
+SELECT 
+    year,
+    month,
+    new_customers,
+
+    LAG(new_customers) OVER (
+        ORDER BY year, month_num  
+    ) AS prev_month_newcustomers,
+
+    ROUND(
+        (
+            (new_customers - LAG(new_customers) OVER (ORDER BY year, month_num)) 
+            / LAG(new_customers) OVER (ORDER BY year, month_num)
+        ) * 100, 2
+    ) AS growth_percentage
+
+FROM cte2
+ORDER BY year, month_num;
+
+-- average rating of products from our customers;
+select avg(review_score)
+from olist_order_reviews_dataset;
+
+
+
+
+
+
