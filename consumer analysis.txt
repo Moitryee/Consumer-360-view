@@ -1,5 +1,5 @@
 use consumer;
--- Question 1 . who are the customers? ( total numbers of customers) 
+-- ###Question 1 . who are the customers? ( total numbers of customers) 
 select distinct count(customer_id) as total_customers from olist_orders_dataset;
 -- Question 2. who are the high value customers?
 with cte as
